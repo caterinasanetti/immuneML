@@ -5,6 +5,7 @@ import pickle
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
+import pandas as pd
 import argparse
 from collections import Counter
 from sklearn.feature_extraction import DictVectorizer
@@ -30,16 +31,24 @@ from tqdm import tqdm
 
 
 class ESM2Encoder(DatasetEncoder):
-    def __init__(self, name: str = None, pickle_file: str = None, embeddings_file: str = None, ):
+    def __init__(self, name: str = None, pickle_file: str = None, embeddings_file: str = None, cdr3_sequence_file: str = None, layers: list = None):
         self.MODEL_LOCATION = "esm2_t33_650M_UR50D"
         self.TOKS_PER_BATCH = 4096
         self.REPR_LAYERS = [-1]
-        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.alphabet = pretrained.load_model_and_alphabet(self.MODEL_LOCATION)
         self.name = name
         self.context = None
         self.pickle_file = pickle_file
         self.embeddings_file = embeddings_file
+        if layers:
+            self.REPR_LAYERS = layers
+        else:
+            self.REPR_LAYERS = [-1]
+        if cdr3_sequence_file:
+            self.cdr3_df = pd.read_csv(cdr3_sequence_file)
+        else:
+            self.cdr3_df = None
 
     @staticmethod
     def build_object(dataset, **params):
@@ -274,3 +283,4 @@ class ESM2Encoder(DatasetEncoder):
         )
         self.context['dataset'].element_generator.buffer_type = None
         return encoded_dataset
+
